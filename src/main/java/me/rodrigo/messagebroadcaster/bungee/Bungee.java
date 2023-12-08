@@ -1,43 +1,29 @@
-package me.rodrigo.messagebroadcaster;
+package me.rodrigo.messagebroadcaster.bungee;
 
-import com.google.inject.Inject;
-import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
-import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.plugin.Plugin;
-import com.velocitypowered.api.plugin.annotation.DataDirectory;
-import com.velocitypowered.api.proxy.ProxyServer;
 import me.rodrigo.messagebroadcaster.http.Http;
 import me.rodrigo.messagebroadcaster.lib.Parser;
-import net.kyori.adventure.text.Component;
-import org.slf4j.Logger;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.plugin.Plugin;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
-@Plugin(
-        id = "messagebroadcaster",
-        name = "MessageBroadcaster",
-        version = "1.0",
-        description = "Message broadcaster",
-        authors = { "Rodrigo R." }
-)
-public class MessageBroadcaster {
-
-    @Inject
-    private final Logger logger;
-    private final ProxyServer proxyServer;
+public class Bungee extends Plugin {
     private List<String> messages;
     private String lastBroadcastedMessage = "";
     private Parser parser;
+    private Logger logger;
 
-    @Inject
-    public MessageBroadcaster(ProxyServer proxyServer, Logger logger, @DataDirectory Path dataDirectory) {
-        this.proxyServer = proxyServer;
+    @Override
+    public void onEnable() {
+        final Path dataDirectory = getDataFolder().toPath();
+        final Logger logger = getLogger();
         this.logger = logger;
         if (!dataDirectory.toFile().exists() && !dataDirectory.toFile().mkdirs()) {
-            logger.error("Failed to create data directory");
+            logger.severe("Failed to create data directory");
             return;
         }
         try {
@@ -49,25 +35,17 @@ public class MessageBroadcaster {
             }
             this.parser = new Parser(dataDirectory.resolve("config.yml"));
             messages = parser.AsStringList("messages");
+            Enable();
         } catch (IOException e) {
-            logger.error("Failed to download config.yml due to: " + e.getMessage());
+            logger.severe("Failed to download config.yml due to: " + e.getMessage());
         }
+
     }
 
-    private String getRandomMessage() {
-        String message = messages.get((int) (Math.random() * messages.size()));
-        while (message.equals(lastBroadcastedMessage)) {
-            message = messages.get((int) (Math.random() * messages.size()));
-        }
-        lastBroadcastedMessage = message;
-        return message;
-    }
-
-    @Subscribe
-    public void onProxyInitialization(ProxyInitializeEvent event) {
+    public void Enable() {
         if (parser == null) return;
         if (messages.size() < 2) {
-            logger.error("Messages list must have at least 2 messages");
+            logger.severe("Messages list must have at least 2 messages");
             return;
         }
         TimeUnit unit;
@@ -86,9 +64,18 @@ public class MessageBroadcaster {
                 break;
         }
         long amount = Long.parseLong(parser.AsObject("every.amount").toString());
-        proxyServer.getScheduler().buildTask(this, () -> {
+        getProxy().getScheduler().schedule(this, () -> {
             String message = getRandomMessage().replaceAll("&", "§");
-            proxyServer.sendMessage(Component.text(message));
-        }).repeat(amount, unit).schedule();
+            getProxy().broadcast(TextComponent.fromLegacyText(message));
+        }, amount, unit);
+    }
+
+    private String getRandomMessage() {
+        String message = messages.get((int) (Math.random() * messages.size()));
+        while (message.equals(lastBroadcastedMessage)) {
+            message = messages.get((int) (Math.random() * messages.size()));
+        }
+        lastBroadcastedMessage = message;
+        return message;
     }
 }

@@ -1,0 +1,5 @@
+name: MessageBroadcaster
+version: "1.0"
+description: Message broadcaster
+author: "Rodrigo R."
+main: me.rodrigo.messagebroadcaster.bungee.Bungee

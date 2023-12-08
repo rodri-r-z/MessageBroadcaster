@@ -14,3 +14,4 @@ every:
   unit: seconds
   amount: 10
 # Means: Broadcast every 10 seconds
+# Supported units: seconds, minutes, hours, days
