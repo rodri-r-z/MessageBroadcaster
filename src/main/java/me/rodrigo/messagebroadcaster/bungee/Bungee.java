@@ -67,7 +67,7 @@ public class Bungee extends Plugin {
         getProxy().getScheduler().schedule(this, () -> {
             String message = getRandomMessage().replaceAll("&", "§");
             getProxy().broadcast(TextComponent.fromLegacyText(message));
-        }, amount, unit);
+        }, 0, amount, unit);
     }
 
     private String getRandomMessage() {
