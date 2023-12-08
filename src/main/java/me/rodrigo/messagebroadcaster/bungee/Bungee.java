@@ -1,12 +1,15 @@
 package me.rodrigo.messagebroadcaster.bungee;
 
-import me.rodrigo.messagebroadcaster.http.Http;
 import me.rodrigo.messagebroadcaster.lib.Parser;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -28,16 +31,18 @@ public class Bungee extends Plugin {
         }
         try {
             if (!dataDirectory.resolve("config.yml").toFile().exists()) {
-                Http.DownloadFile(
-                        "https://raw.githubusercontent.com/rodri-r-z/MessageBroadcaster/main/src/main/resources/config.yml",
-                        dataDirectory.resolve("config.yml").toString()
-                );
+                final InputStream data = getResourceAsStream("config.yml");
+                if (data == null) {
+                    logger.severe("Failed to get config.yml");
+                    return;
+                }
+                Files.copy(data, dataDirectory.resolve("config.yml"), StandardCopyOption.REPLACE_EXISTING);
             }
             this.parser = new Parser(dataDirectory.resolve("config.yml"));
             messages = parser.AsStringList("messages");
             Enable();
         } catch (IOException e) {
-            logger.severe("Failed to download config.yml due to: " + e.getMessage());
+            logger.severe("Failed to get config.yml due to: " + e.getMessage());
         }
 
     }
@@ -66,6 +71,12 @@ public class Bungee extends Plugin {
         long amount = Long.parseLong(parser.AsObject("every.amount").toString());
         getProxy().getScheduler().schedule(this, () -> {
             String message = getRandomMessage().replaceAll("&", "§");
+            for (ProxiedPlayer player : getProxy().getPlayers()) {
+                player.sendMessage(TextComponent.fromLegacyText(
+                        message
+                                .replaceAll("(?i)\\{player\\}", player.getName())
+                ));
+            }
             getProxy().broadcast(TextComponent.fromLegacyText(message));
         }, 0, amount, unit);
     }

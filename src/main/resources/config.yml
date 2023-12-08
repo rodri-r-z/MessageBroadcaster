@@ -1,5 +1,5 @@
 # Message Broadcaster - Made by Rodrigo R.
-# Version 1.0
+# Version 1.1
 
 messages:
   - "Enjoying my server? Consider donating to me here: &ahttps://donate.myserver.com/"
@@ -15,3 +15,7 @@ every:
   amount: 10
 # Means: Broadcast every 10 seconds
 # Supported units: seconds, minutes, hours, days
+
+silent_mode: true
+# This mode is not going to show the message into the console, but for players
+# While silent mode is enable you can use "{player}" in your messages, it will be replaced with the player name

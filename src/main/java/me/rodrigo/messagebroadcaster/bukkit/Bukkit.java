@@ -1,7 +1,7 @@
 package me.rodrigo.messagebroadcaster.bukkit;
 
-import me.rodrigo.messagebroadcaster.http.Http;
 import me.rodrigo.messagebroadcaster.lib.Parser;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -26,10 +26,7 @@ public class Bukkit extends JavaPlugin {
         }
         try {
             if (!dataDirectory.resolve("config.yml").toFile().exists()) {
-                Http.DownloadFile(
-                        "https://raw.githubusercontent.com/rodri-r-z/MessageBroadcaster/main/src/main/resources/config.yml",
-                        dataDirectory.resolve("config.yml").toString()
-                );
+                saveResource("config.yml", false);
             }
             this.parser = new Parser(dataDirectory.resolve("config.yml"));
             messages = parser.AsStringList("messages");
@@ -64,6 +61,12 @@ public class Bukkit extends JavaPlugin {
         long amount = Long.parseLong(parser.AsObject("every.amount").toString());
         getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {
             String message = getRandomMessage().replaceAll("&", "§");
+            for (Player player : getServer().getOnlinePlayers()) {
+                player.sendMessage(
+                        message
+                                .replaceAll("(?i)\\{player\\}", player.getName())
+                );
+            }
             getServer().broadcastMessage(message);
         }, 0, amount * multiplier);
     }
